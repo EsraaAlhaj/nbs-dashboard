@@ -408,7 +408,7 @@ def pdf_report(site_id="spain"):
 
 @app.route("/debug")
 def debug_info():
-    import json as _json, os as _os, sys as _sys
+    import json as _json, os as _os, traceback as _tb
 
     lines = []
     lines.append(f"<b>_CORE_OK:</b> {_CORE_OK}")
@@ -422,7 +422,6 @@ def debug_info():
             info = _json.loads(sa_json)
             lines.append(f"<b>service_account email:</b> {info.get('client_email', 'N/A')}")
             lines.append(f"<b>project_id:</b> {info.get('project_id', 'N/A')}")
-            lines.append(f"<b>private_key present:</b> {bool(info.get('private_key'))}")
         except Exception as e:
             lines.append(f"<b>JSON parse error:</b> {e}")
 
@@ -430,17 +429,28 @@ def debug_info():
         try:
             from core import init_ee
             ok, msg = init_ee()
-            lines.append(f"<b>init_ee() result:</b> ok={ok}, msg={msg}")
+            lines.append(f"<b>init_ee():</b> ok={ok}, msg={msg}")
         except Exception as e:
             lines.append(f"<b>init_ee() exception:</b> {e}")
 
-    # Show env vars (non-secret ones)
-    lines.append("<b>Env vars (non-secret):</b>")
-    for k, v in sorted(_os.environ.items()):
-        if "KEY" not in k and "SECRET" not in k and "PASSWORD" not in k and "JSON" not in k:
-            lines.append(f"&nbsp;&nbsp;{k} = {v[:80]}")
+        lines.append("<hr><b>Testing compute_site_metrics (Spain)...</b>")
+        try:
+            from core import compute_site_metrics
+            result = compute_site_metrics("🇪🇸  Spain — Cerdanyola del Vallès")
+            m = result.get("metrics", {})
+            lines.append(f"<b>ee_ok:</b> {result.get('ee_ok')} — {result.get('ee_msg')}")
+            lines.append(f"<b>LST:</b> {m.get('LST')}")
+            lines.append(f"<b>NDVI:</b> {m.get('NDVI')}")
+            lines.append(f"<b>VCI:</b> {m.get('VCI')}")
+            lines.append(f"<b>HeatIndex:</b> {m.get('HeatIndex')}")
+            lines.append(f"<b>Aridity:</b> {m.get('Aridity')}")
+            lines.append(f"<b>power_df rows:</b> {len(result.get('power_df', []))}")
+            lines.append(f"<b>ndvi_df rows:</b> {len(result.get('ndvi_df', []))}")
+        except Exception as e:
+            lines.append(f"<b>compute_site_metrics FAILED:</b> {e}")
+            lines.append(f"<pre>{_tb.format_exc()}</pre>")
 
-    html = "<html><body style='font-family:monospace;padding:20px;'>"
+    html = "<html><body style='font-family:monospace;padding:20px;line-height:1.8;'>"
     html += "<h2>NBS4MED Debug</h2>"
     html += "<br>".join(lines)
     html += "</body></html>"
