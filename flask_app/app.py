@@ -406,5 +406,46 @@ def pdf_report(site_id="spain"):
                         mimetype="text/plain")
 
 
+@app.route("/debug")
+def debug_info():
+    import json as _json, os as _os, sys as _sys
+
+    lines = []
+    lines.append(f"<b>_CORE_OK:</b> {_CORE_OK}")
+    if not _CORE_OK:
+        lines.append(f"<b>core import error:</b> {_core_err_msg}")
+
+    sa_json = _os.environ.get("GEE_SERVICE_ACCOUNT_JSON", "")
+    lines.append(f"<b>GEE_SERVICE_ACCOUNT_JSON present:</b> {bool(sa_json)} (len={len(sa_json)})")
+    if sa_json:
+        try:
+            info = _json.loads(sa_json)
+            lines.append(f"<b>service_account email:</b> {info.get('client_email', 'N/A')}")
+            lines.append(f"<b>project_id:</b> {info.get('project_id', 'N/A')}")
+            lines.append(f"<b>private_key present:</b> {bool(info.get('private_key'))}")
+        except Exception as e:
+            lines.append(f"<b>JSON parse error:</b> {e}")
+
+    if _CORE_OK:
+        try:
+            from core import init_ee
+            ok, msg = init_ee()
+            lines.append(f"<b>init_ee() result:</b> ok={ok}, msg={msg}")
+        except Exception as e:
+            lines.append(f"<b>init_ee() exception:</b> {e}")
+
+    # Show env vars (non-secret ones)
+    lines.append("<b>Env vars (non-secret):</b>")
+    for k, v in sorted(_os.environ.items()):
+        if "KEY" not in k and "SECRET" not in k and "PASSWORD" not in k and "JSON" not in k:
+            lines.append(f"&nbsp;&nbsp;{k} = {v[:80]}")
+
+    html = "<html><body style='font-family:monospace;padding:20px;'>"
+    html += "<h2>NBS4MED Debug</h2>"
+    html += "<br>".join(lines)
+    html += "</body></html>"
+    return html
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
