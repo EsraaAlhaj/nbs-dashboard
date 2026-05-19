@@ -129,31 +129,37 @@ def styled_fig(fig: go.Figure, height: int = 400) -> go.Figure:
 #  EARTH ENGINE
 # ════════════════════════════════════════════════════════════════════════════
 def init_ee() -> Tuple[bool, str]:
+    import sys
     if not EE_AVAILABLE:
+        print("GEE-DEBUG: earthengine-api not installed", flush=True, file=sys.stderr)
         return False, "earthengine-api not installed."
-    # Cloud deployment: use service account JSON from environment variable
     sa_json = os.environ.get("GEE_SERVICE_ACCOUNT_JSON")
+    print(f"GEE-DEBUG: SA_JSON present={bool(sa_json)} len={len(sa_json) if sa_json else 0}", flush=True, file=sys.stderr)
     if sa_json:
         try:
             import json as _json
             sa_info = _json.loads(sa_json)
+            print(f"GEE-DEBUG: client_email={sa_info.get('client_email')}", flush=True, file=sys.stderr)
             credentials = ee.ServiceAccountCredentials(
                 email=sa_info["client_email"],
                 key_data=sa_json,
             )
             ee.Initialize(credentials, project="ee-esraahalhaj")
+            print("GEE-DEBUG: Authenticated via service account OK", flush=True, file=sys.stderr)
             return True, "Authenticated via service account."
         except Exception as err:
+            print(f"GEE-DEBUG: Service account auth FAILED: {err}", flush=True, file=sys.stderr)
             return False, f"Service account auth failed: {err}"
-    # Local: use cached user credentials
     try:
         ee.Initialize(project="ee-esraahalhaj")
+        print("GEE-DEBUG: Authenticated via project credentials", flush=True, file=sys.stderr)
         return True, "Authenticated via project credentials."
     except Exception:
         try:
             ee.Initialize()
             return True, "Authenticated via default credentials."
         except Exception as err:
+            print(f"GEE-DEBUG: All auth methods failed: {err}", flush=True, file=sys.stderr)
             return False, f"Earth Engine not authenticated: {err}"
 
 
