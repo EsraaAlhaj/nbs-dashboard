@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NBS4MED · {{ site.name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="brand-mark">
+      <img src="{{ url_for('static', filename='images/interreg.png') }}"
+           alt="Interreg NEXT MED" class="brand-logo">
+      <div>
+        <div class="brand-name">NBS4MED</div>
+        <div class="brand-sub">Diagnostic Hub</div>
+      </div>
+    </div>
+
+    <div class="sb-section">Pilot Site</div>
+    <select class="site-select" onchange="window.location.href='/site/' + this.value">
+      {% for id, s in all_sites.items() %}
+      <option value="{{ id }}" {% if id == site_id %}selected{% endif %}>
+        {{ s.flag }}  {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <div class="sb-section">Diagnostic Layers</div>
+    <div class="check-list">
+      <div class="check on"><span class="box"></span>Thermal stress (LST)</div>
+      <div class="check on"><span class="box"></span>Vegetation (NDVI / SAVI)</div>
+      <div class="check on"><span class="box"></span>Drought (SPI / VHI / MSI)</div>
+      <div class="check on"><span class="box"></span>Topography (DEM / slope)</div>
+      <div class="check on"><span class="box"></span>Climate (NASA POWER)</div>
+    </div>
+
+    <div class="sb-section">Time Window</div>
+    <div class="slider-row">
+      <div class="slider"><div class="fill"></div><div class="thumb"></div></div>
+      <div class="slider-meta"><span>3 yrs</span><span>10 yrs</span><span>15 yrs</span></div>
+    </div>
+    <div class="info-note">
+      <b>Slider</b> controls NDVI trend &amp; precipitation charts.<br>
+      <b>Baseline</b> SPI, Aridity &amp; PET use a fixed 30-year reference period.
+    </div>
+
+    <div class="sb-section">Map Settings</div>
+    <div class="select">
+      <span>Satellite</span>
+      <svg class="caret" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+    </div>
+
+    <div class="sb-footer">
+      <div class="row"><b>Data</b><br>NASA POWER · Landsat 8/9 · MODIS · CHIRPS · SRTM</div>
+      <div class="row"><b>Stack</b><br>GEE · leafmap · Plotly · Streamlit</div>
+      <div class="row"><b>Methods</b><br>Hargreaves/FAO-56 · McKee et al. 1993</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-text">
+        <div class="hero-eyebrow">Interreg NEXT MED · University of Jordan (PP7)</div>
+        <h1>NBS4MED</h1>
+        <p>Pre-Intervention Baseline Assessment of Pilot Sites</p>
+        <div class="wp-tags">
+          <span class="wp-tag"><span class="pip"></span>WP3 · Self-Evaluation Tool</span>
+          <span class="wp-tag"><span class="pip"></span>WP4 · Pilot Monitoring</span>
+        </div>
+      </div>
+      <div class="hero-logos">
+        <img src="{{ url_for('static', filename='images/interreg.png') }}" height="44" alt="Interreg NEXT MED" style="object-fit:contain;">
+        <img src="{{ url_for('static', filename='images/uj_logo.png') }}"  height="44" alt="University of Jordan" style="object-fit:contain;">
+      </div>
+    </section>
+
+    <!-- SITE INFO -->
+    <section class="site-info">
+      <div class="item">
+        <span class="label">WP4 Pilot Action</span>
+        <span class="value">{{ site.pilot_action }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Intervention Area</span>
+        <span class="value">{{ site.area }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Implementing Partner</span>
+        <span class="value">{{ site.partner }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Coordinates</span>
+        <span class="value mono">{{ site.coordinates }}</span>
+      </div>
+    </section>
+
+    <!-- KPI GRID -->
+    <section class="kpi-grid">
+      <div class="kpi" style="--accent: var(--{{ site.lst.color }})">
+        <div class="kpi-label">Land Surface Temp <span class="src">Landsat C2L2</span></div>
+        <div class="kpi-value">{{ site.lst.fmt }}<span class="kpi-unit">{{ site.lst.unit }}</span></div>
+        <span class="kpi-status status-{{ site.lst.color }}"><span class="sdot"></span>{{ site.lst.status }}</span>
+      </div>
+      <div class="kpi" style="--accent: var(--{{ site.heat_index.color }})">
+        <div class="kpi-label">Heat Index <span class="src">NOAA · hot-month est.</span></div>
+        <div class="kpi-value">{{ site.heat_index.fmt }}<span class="kpi-unit">{{ site.heat_index.unit }}</span></div>
+        <span class="kpi-status status-{{ site.heat_index.color }}"><span class="sdot"></span>{{ site.heat_index.status }}</span>
+      </div>
+      <div class="kpi" style="--accent: var(--{{ site.vegetation.color }})">
+        <div class="kpi-label">Vegetation Condition <span class="src">VCI · Kogan</span></div>
+        <div class="kpi-value">{{ site.vegetation.fmt }}<span class="kpi-unit">{{ site.vegetation.unit }}</span></div>
+        <span class="kpi-status status-{{ site.vegetation.color }}"><span class="sdot"></span>{{ site.vegetation.status }}</span>
+      </div>
+      <div class="kpi" style="--accent: var(--{{ site.aridity.color }})">
+        <div class="kpi-label">Aridity Index <span class="src">P/PET · Hargreaves</span></div>
+        <div class="kpi-value">{{ site.aridity.fmt }}<span class="kpi-unit">{{ site.aridity.unit }}</span></div>
+        <span class="kpi-status status-{{ site.aridity.color }}"><span class="sdot"></span>{{ site.aridity.status }}</span>
+      </div>
+    </section>
+
+    <!-- TABS -->
+    <section class="tabs-wrap">
+      <div class="tablist">
+        <div class="tab" id="tab-map" onclick="switchTab('map')">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l4-2 4 2 4-2v10l-4 2-4-2-4 2V4z"/><path d="M6 2v10M10 4v10"/></svg>
+          Diagnostic Map
+        </div>
+        <div class="tab" id="tab-trends" onclick="switchTab('trends')">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l3-4 3 2 4-6 2 3"/></svg>
+          Trends
+        </div>
+        <div class="tab" id="tab-climate" onclick="switchTab('climate')">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="8" width="3" height="6"/><rect x="6.5" y="4" width="3" height="10"/><rect x="11" y="6" width="3" height="8"/></svg>
+          Climate &amp; Stress
+        </div>
+        <div class="tab" id="tab-report" onclick="switchTab('report')">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3V2z"/><path d="M10 2v3h3"/></svg>
+          Report
+        </div>
+      </div>
+
+      <div class="tab-body">
+
+        <!-- ── PANEL: DIAGNOSTIC MAP ── -->
+        <div class="tab-panel" id="panel-map">
+          <div class="section-title">
+            Diagnostic Map
+            <span class="sub">Satellite · {{ site.name }}</span>
+          </div>
+          <div id="map"></div>
+          <div class="map-meta">
+            <span>{{ site.coordinates }}</span>
+            <span>{% if site.elevation is not none %}Elevation {{ "%.1f"|format(site.elevation) }} m · Slope {{ "%.1f"|format(site.slope) }}°{% else %}Elevation — · Slope —{% endif %}</span>
+          </div>
+        </div>
+
+        <!-- ── PANEL: TRENDS ── -->
+        <div class="tab-panel" id="panel-trends">
+          <div class="section-title">
+            NDVI Vegetation Trend
+            <span class="sub">Landsat / MODIS · 2015–2024</span>
+          </div>
+          <div class="plotly-wrap" id="chart-ndvi"></div>
+
+          <div class="trend-stats">
+            <div class="tstat">
+              <div class="tstat-label">Current NDVI</div>
+              <div class="tstat-value">{{ "%.3f"|format(site.ndvi) if site.ndvi is not none else "—" }}</div>
+            </div>
+            <div class="tstat">
+              <div class="tstat-label">SAVI</div>
+              <div class="tstat-value">{{ "%.3f"|format(site.savi) if site.savi is not none else "—" }}</div>
+            </div>
+            <div class="tstat">
+              <div class="tstat-label">MSI</div>
+              <div class="tstat-value">{{ "%.3f"|format(site.msi) if site.msi is not none else "—" }}</div>
+            </div>
+            <div class="tstat">
+              <div class="tstat-label">VCI</div>
+              <div class="tstat-value">{{ site.vegetation.fmt }}{% if site.vegetation.unit %}/100{% endif %}</div>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top:24px;">
+            SPI-3 Drought Index
+            <span class="sub">McKee et al. 1993 · NASA POWER</span>
+          </div>
+          <div class="plotly-wrap" id="chart-spi"></div>
+
+          <div class="section-title" style="margin-top:24px;">
+            Annual Precipitation Trend
+            <span class="sub">NASA POWER · MERRA-2</span>
+          </div>
+          <div class="plotly-wrap" id="chart-precip"></div>
+        </div>
+
+        <!-- ── PANEL: CLIMATE & STRESS ── -->
+        <div class="tab-panel" id="panel-climate">
+          <div class="section-title">
+            Climate Parameters
+            <span class="sub">NASA POWER · 30-year baseline</span>
+          </div>
+          <div class="climate-grid">
+            <div class="climate-card">
+              <div class="cc-icon">&#127777;</div>
+              <div class="cc-label">Mean Air Temperature</div>
+              <div class="cc-value">{{ "%.1f"|format(site.climate.t_mean) if site.climate.t_mean is not none else "—" }}<span class="cc-unit">{% if site.climate.t_mean is not none %}°C{% endif %}</span></div>
+              <div class="cc-src">NASA POWER · MERRA-2</div>
+            </div>
+            <div class="climate-card">
+              <div class="cc-icon">&#128167;</div>
+              <div class="cc-label">Relative Humidity</div>
+              <div class="cc-value">{{ "%.0f"|format(site.climate.rh) if site.climate.rh is not none else "—" }}<span class="cc-unit">{% if site.climate.rh is not none %}%{% endif %}</span></div>
+              <div class="cc-src">NASA POWER · MERRA-2</div>
+            </div>
+            <div class="climate-card">
+              <div class="cc-icon">&#127783;</div>
+              <div class="cc-label">Annual Precipitation</div>
+              <div class="cc-value">{{ "%.0f"|format(site.climate.precip) if site.climate.precip is not none else "—" }}<span class="cc-unit">{% if site.climate.precip is not none %}mm{% endif %}</span></div>
+              <div class="cc-src">NASA POWER · MERRA-2</div>
+            </div>
+            <div class="climate-card">
+              <div class="cc-icon">&#9728;</div>
+              <div class="cc-label">Potential Evapotranspiration</div>
+              <div class="cc-value">{{ "%.0f"|format(site.climate.pet) if site.climate.pet is not none else "—" }}<span class="cc-unit">{% if site.climate.pet is not none %}mm{% endif %}</span></div>
+              <div class="cc-src">Hargreaves 1985</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-top: 24px;">
+              <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                  <div class="plotly-wrap" id="chart-temperature"></div>
+              </div>
+              <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                  <div class="plotly-wrap" id="chart-hydro-solar"></div>
+              </div>
+          </div>
+
+          <div class="section-title" style="margin-top:24px;">
+            Compound Stress Profile
+            <span class="sub">Multi-index radar · baseline values</span>
+          </div>
+          <div class="plotly-wrap" id="chart-radar"></div>
+
+          <div class="section-title" style="margin-top:22px;">
+            Stress Summary
+            <span class="sub">Derived indices</span>
+          </div>
+          <div class="stress-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Value</th>
+                  <th>Classification</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="idx">LST</td>
+                  <td class="val">{{ site.lst.fmt }}{% if site.lst.unit %} {{ site.lst.unit }}{% endif %}</td>
+                  <td class="method">Land Surface Temperature · Landsat C2L2</td>
+                  <td><span class="kpi-status status-{{ site.lst.color }}"><span class="sdot"></span>{{ site.lst.status }}</span></td>
+                </tr>
+                <tr>
+                  <td class="idx">Heat Index</td>
+                  <td class="val">{{ site.heat_index.fmt }}{% if site.heat_index.unit %} {{ site.heat_index.unit }}{% endif %}</td>
+                  <td class="method">NOAA Rothfusz 1990 + NWS adj. · hot-month screening estimate</td>
+                  <td><span class="kpi-status status-{{ site.heat_index.color }}"><span class="sdot"></span>{{ site.heat_index.status }}</span></td>
+                </tr>
+                <tr>
+                  <td class="idx">VCI</td>
+                  <td class="val">{{ site.vegetation.fmt }}{% if site.vegetation.unit %} {{ site.vegetation.unit }}{% endif %}</td>
+                  <td class="method">Vegetation Condition Index · Kogan 1995</td>
+                  <td><span class="kpi-status status-{{ site.vegetation.color }}"><span class="sdot"></span>{{ site.vegetation.status }}</span></td>
+                </tr>
+                <tr>
+                  <td class="idx">Aridity</td>
+                  <td class="val">{{ site.aridity.fmt }}{% if site.aridity.unit %} {{ site.aridity.unit }}{% endif %}</td>
+                  <td class="method">UNEP 1992 · Hargreaves/FAO-56 PET</td>
+                  <td><span class="kpi-status status-{{ site.aridity.color }}"><span class="sdot"></span>{{ site.aridity.status }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── PANEL: REPORT ── -->
+        <div class="tab-panel" id="panel-report">
+          <div class="section-title">
+            Diagnostic Indices
+            <span class="sub">Pre-intervention baseline · {{ today }}</span>
+          </div>
+          <div class="diag-table">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:140px;">Index</th>
+                  <th>Method</th>
+                  <th style="width:180px; text-align:right;">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="idx">LST</td>
+                  <td class="method">Land Surface Temperature · Landsat C2L2</td>
+                  <td class="val">{{ site.lst.fmt }}{% if site.lst.unit %} {{ site.lst.unit }}{% endif %}</td>
+                </tr>
+                <tr>
+                  <td class="idx">NDVI</td>
+                  <td class="method">Vegetation Index · Rouse et al. 1974 · Landsat</td>
+                  <td class="val">{{ "%.3f"|format(site.ndvi) if site.ndvi is not none else "—" }}</td>
+                </tr>
+                <tr>
+                  <td class="idx">SAVI</td>
+                  <td class="method">Soil-Adj. Vegetation Index · Huete 1988 · Landsat</td>
+                  <td class="val">{{ "%.3f"|format(site.savi) if site.savi is not none else "—" }}</td>
+                </tr>
+                <tr>
+                  <td class="idx">MSI</td>
+                  <td class="method">Moisture Stress Index · Hunt &amp; Rock 1989 · Landsat</td>
+                  <td class="val">{{ "%.3f"|format(site.msi) if site.msi is not none else "—" }}</td>
+                </tr>
+                <tr>
+                  <td class="idx">VCI</td>
+                  <td class="method">Vegetation Condition Index · Kogan 1995</td>
+                  <td class="val">{{ site.vegetation.fmt }}{% if site.vegetation.unit %} /100{% endif %}</td>
+                </tr>
+                <tr>
+                  <td class="idx">Aridity</td>
+                  <td class="method">Aridity Index · UNEP 1992 + Hargreaves/FAO-56</td>
+                  <td class="val">{{ site.aridity.fmt }}{% if site.aridity.unit %} P/PET{% endif %}</td>
+                </tr>
+                <tr>
+                  <td class="idx">Heat Index</td>
+                  <td class="method">NOAA Rothfusz 1990 + NWS adj. · hot-month screening estimate</td>
+                  <td class="val">{{ site.heat_index.fmt }}{% if site.heat_index.unit %} {{ site.heat_index.unit }}{% endif %}</td>
+                </tr>
+                <tr>
+                  <td class="idx">Elevation</td>
+                  <td class="method">Mean Elevation · SRTM 30m</td>
+                  <td class="val">{{ "%.1f"|format(site.elevation) ~ " m" if site.elevation is not none else "—" }}</td>
+                </tr>
+                <tr>
+                  <td class="idx">Slope</td>
+                  <td class="method">Mean Slope · SRTM 30m</td>
+                  <td class="val">{{ "%.1f"|format(site.slope) ~ " °" if site.slope is not none else "—" }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="openTextReport()">
+              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2h7l3 3v9H3V2z"/><path d="M5 8h6M5 11h6"/></svg>
+              Generate Text Report
+            </button>
+            <button class="btn btn-secondary" onclick="downloadPdf()">
+              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v9M4 7l4 4 4-4M3 14h10"/></svg>
+              Download PDF Report
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /.tab-body -->
+    </section>
+
+    <div class="page-footer">
+      <b>NBS4MED</b> · Interreg NEXT MED Programme · University of Jordan (PP7)<br>
+      Pre-intervention baseline · {{ today }}
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Scripts ── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+const SITE_LAT    = {{ site.lat }};
+const SITE_LON    = {{ site.lon }};
+const SITE_NAME   = {{ site.name | tojson }};
+const SITE_ACTION = {{ site.pilot_action | tojson }};
+const SITE_ID     = {{ site_id | tojson }};
+
+// تحديث كائن البيانات ليشمل الشارتات الجديدة
+const CHARTS = {
+  ndvi:        {{ charts.ndvi        | tojson if charts.ndvi        else 'null' }},
+  spi:         {{ charts.spi         | tojson if charts.spi         else 'null' }},
+  temperature: {{ charts.temperature | tojson if charts.temperature else 'null' }},
+  hydro_solar: {{ charts.hydro_solar | tojson if charts.hydro_solar else 'null' }},
+  radar:       {{ charts.radar       | tojson if charts.radar       else 'null' }},
+  precip:      {{ charts.precip      | tojson if charts.precip      else 'null' }},
+};
+
+const _plotlyConfig = { responsive: true, displaylogo: false,
+  modeBarButtonsToRemove: ['select2d','lasso2d','autoScale2d'] };
+
+function _renderChart(divId, jsonStr) {
+  if (!jsonStr) return;
+  try {
+    const spec = JSON.parse(jsonStr);
+    Plotly.newPlot(divId, spec.data, spec.layout, _plotlyConfig);
+  } catch(e) { console.warn('Chart render failed:', divId, e); }
+}
+
+let _mapInstance    = null;
+let _trendsRendered = false;
+let _climateRendered = false;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+
+  if (name === 'map' && !_mapInstance) {
+    _mapInstance = initMap();
+  }
+  if (name === 'trends' && !_trendsRendered) {
+    _renderChart('chart-ndvi',    CHARTS.ndvi);
+    _renderChart('chart-spi',     CHARTS.spi);
+    _renderChart('chart-precip',  CHARTS.precip);
+    _trendsRendered = true;
+  }
+  // التحديث هنا: تشغيل الشارتين الجديدين بدلاً من القديم
+  if (name === 'climate' && !_climateRendered) {
+    _renderChart('chart-temperature', CHARTS.temperature);
+    _renderChart('chart-hydro-solar', CHARTS.hydro_solar);
+    _renderChart('chart-radar',       CHARTS.radar);
+    _climateRendered = true;
+  }
+}
+
+function initMap() {
+  const map = L.map('map').setView([SITE_LAT, SITE_LON], 16);
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Tiles &copy; Esri', maxZoom: 19 }
+  ).addTo(map);
+  L.marker([SITE_LAT, SITE_LON])
+    .addTo(map)
+    .bindPopup('<b>' + SITE_NAME + '</b><br>' + SITE_ACTION)
+    .openPopup();
+  return map;
+}
+
+function openTextReport() { window.open('/site/' + SITE_ID + '/report', '_blank'); }
+function downloadPdf()    { window.location.href = '/site/' + SITE_ID + '/pdf'; }
+
+switchTab('map');
+</script>

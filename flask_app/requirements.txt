@@ -1,0 +1,9 @@
+flask>=3.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+plotly>=5.0.0
+requests>=2.28.0
+scipy>=1.10.0
+gunicorn>=21.0.0
+earthengine-api>=0.1.370
+reportlab>=4.0.0

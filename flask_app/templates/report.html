@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBS4MED Diagnostic Report — {{ ctx.site }}</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --navy:       #003d7a;
+      --navy-light: #005098;
+      --green:  #16a34a; --green-bg:  #f0fdf4; --green-bd:  #bbf7d0;
+      --amber:  #b45309; --amber-bg:  #fffbeb; --amber-bd:  #fde68a;
+      --orange: #c2410c; --orange-bg: #fff7ed; --orange-bd: #fed7aa;
+      --red:    #dc2626; --red-bg:    #fef2f2; --red-bd:    #fecaca;
+      --neutral:#64748b; --neutral-bg:#f8fafc; --neutral-bd:#e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, Arial, sans-serif; font-size: 14px; color: #1e293b; background: #f0f4f8; line-height: 1.6; }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 1020px; margin: 0 auto; padding: 24px 16px 40px; }
+
+    /* ── Header ── */
+    .rpt-header {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 12px;
+      padding: 28px 32px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+    }
+    .rpt-eyebrow { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 6px; }
+    .rpt-title   { font-size: 24px; font-weight: 700; line-height: 1.2; }
+    .rpt-sub     { font-size: 14px; color: rgba(255,255,255,.72); margin: 4px 0 18px; }
+    .rpt-meta    { display: flex; gap: 24px; flex-wrap: wrap; }
+    .rpt-meta-item { display: flex; flex-direction: column; }
+    .rpt-meta-key { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.45); }
+    .rpt-meta-val { font-size: 13px; color: rgba(255,255,255,.88); font-weight: 500; }
+    .rpt-actions  { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .rpt-actions .logo { height: 34px; filter: brightness(0) invert(1); opacity: .8; }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-back  { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.12); color: #fff; text-decoration: none; padding: 6px 13px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; }
+    .btn-back:hover { background: rgba(255,255,255,.22); }
+    .btn-print { display: inline-flex; align-items: center; gap: 5px; background: #fff; color: var(--navy); text-decoration: none; padding: 6px 13px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-print:hover { background: #e8f0fb; }
+
+    /* ── Cards / sections ── */
+    .card { background: #fff; border-radius: 10px; padding: 22px 24px; margin-bottom: 14px; border: 1px solid #e2e8f0; }
+    .card-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--navy); padding-bottom: 12px; border-bottom: 2px solid #e8edf3;
+      margin-bottom: 18px; display: flex; align-items: center; gap: 9px;
+    }
+    .sec-num {
+      background: var(--navy); color: #fff; border-radius: 50%;
+      width: 22px; height: 22px; display: inline-flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── KPI grid ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpi-card { border-radius: 8px; padding: 15px 16px; border: 1px solid; }
+    .kpi-abbr  { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 2px; }
+    .kpi-name  { font-size: 11px; color: #64748b; margin-bottom: 7px; }
+    .kpi-val   { font-size: 30px; font-weight: 700; line-height: 1; display: inline; }
+    .kpi-unit  { font-size: 12px; color: #64748b; font-weight: 500; margin-left: 2px; }
+    .kpi-badge { display: inline-block; margin-top: 9px; padding: 2px 9px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+    .kpi-note  { font-size: 10px; color: #94a3b8; margin-top: 5px; }
+
+    /* ── Color system ── */
+    .c-green   { color: var(--green);  background: var(--green-bg);  border-color: var(--green-bd); }
+    .c-amber   { color: var(--amber);  background: var(--amber-bg);  border-color: var(--amber-bd); }
+    .c-orange  { color: var(--orange); background: var(--orange-bg); border-color: var(--orange-bd); }
+    .c-red     { color: var(--red);    background: var(--red-bg);    border-color: var(--red-bd); }
+    .c-neutral { color: var(--neutral);background: var(--neutral-bg);border-color: var(--neutral-bd); }
+    .bg-green  { background: var(--green-bg);  color: var(--green); }
+    .bg-amber  { background: var(--amber-bg);  color: var(--amber); }
+    .bg-orange { background: var(--orange-bg); color: var(--orange); }
+    .bg-red    { background: var(--red-bg);    color: var(--red); }
+    .bg-neutral{ background: var(--neutral-bg);color: var(--neutral); }
+    .t-green   { color: var(--green); }
+    .t-amber   { color: var(--amber); }
+    .t-orange  { color: var(--orange); }
+    .t-red     { color: var(--red); }
+    .t-neutral { color: var(--neutral); }
+
+    /* ── Supporting indices ── */
+    .supp-row  { display: flex; gap: 10px; margin-bottom: 18px; }
+    .supp-item { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 13px 15px; }
+    .supp-name { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 4px; }
+    .supp-val  { font-size: 22px; font-weight: 700; color: #1e293b; }
+    .supp-lbl  { font-size: 11px; margin-top: 4px; font-weight: 500; }
+
+    /* ── Two-column layout ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+    .col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #64748b; margin-bottom: 10px; }
+
+    /* ── Tables ── */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl th { background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding: 8px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .tbl td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl .param { font-weight: 500; color: #334155; white-space: nowrap; }
+    .row-hi { background: #eff6ff !important; }
+    .row-hi td { font-weight: 600; border-color: #bfdbfe !important; }
+    .tag { display: inline-block; font-size: 10px; background: #f1f5f9; color: #64748b; border-radius: 4px; padding: 1px 6px; margin-left: 5px; }
+
+    /* ── Diagnostic summary ── */
+    .diag-box {
+      background: #f0f9ff; border: 1px solid #bae6fd;
+      border-left: 4px solid var(--navy);
+      border-radius: 8px; padding: 15px 18px;
+      margin-bottom: 18px; font-size: 13.5px;
+      line-height: 1.75; color: #1e3a5f;
+    }
+
+    /* ── Compound risk bar ── */
+    .risk-bar-wrap { margin-bottom: 18px; }
+    .risk-bar-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+    .risk-bar-label { font-size: 12px; font-weight: 600; color: #334155; }
+    .risk-bar-score { font-size: 12px; font-weight: 600; }
+    .risk-bar-bg    { height: 9px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+    .risk-bar-fill  { height: 100%; border-radius: 5px; }
+
+    /* ── Recommendations ── */
+    .rec-list { display: flex; flex-direction: column; gap: 9px; }
+    .rec-item { display: flex; align-items: flex-start; gap: 11px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; }
+    .rec-cat  { flex-shrink: 0; background: var(--navy); color: #fff; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 3px 8px; border-radius: 4px; margin-top: 1px; white-space: nowrap; }
+    .rec-text { font-size: 13px; color: #334155; line-height: 1.5; }
+
+    /* ── Intro text ── */
+    .intro-text { font-size: 14px; color: #475569; line-height: 1.75; }
+
+    /* ── Footer ── */
+    .rpt-footer { text-align: center; padding: 18px 0 4px; color: #94a3b8; font-size: 11.5px; line-height: 1.8; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .page { max-width: 100%; padding: 0; }
+      .no-print { display: none !important; }
+      .card { break-inside: avoid; box-shadow: none; border: 1px solid #d1d5db; }
+      .rpt-header { border-radius: 0; }
+    }
+    @media (max-width: 700px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col  { grid-template-columns: 1fr; }
+      .rpt-header { flex-direction: column; }
+      .supp-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
+  <div class="rpt-header">
+    <div>
+      <div class="rpt-eyebrow">Interreg NEXT MED · University of Jordan (PP7) · WP4 Pilot Monitoring</div>
+      <div class="rpt-title">NBS4MED Diagnostic Report</div>
+      <div class="rpt-sub">Pre-Intervention Baseline Assessment &mdash; {{ ctx.site }}</div>
+      <div class="rpt-meta">
+        <div class="rpt-meta-item">
+          <span class="rpt-meta-key">Coordinates</span>
+          <span class="rpt-meta-val">{{ "%.4f"|format(ctx.lat) }}°N, {{ "%.4f"|format(ctx.lon) }}°E</span>
+        </div>
+        <div class="rpt-meta-item">
+          <span class="rpt-meta-key">Elevation</span>
+          <span class="rpt-meta-val">{{ ctx.elev }}</span>
+        </div>
+        <div class="rpt-meta-item">
+          <span class="rpt-meta-key">Slope</span>
+          <span class="rpt-meta-val">{{ ctx.slope }}</span>
+        </div>
+        <div class="rpt-meta-item">
+          <span class="rpt-meta-key">Issued</span>
+          <span class="rpt-meta-val">{{ ctx.today }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="rpt-actions">
+      <div class="btn-row no-print">
+        <a href="/site/{{ site_id }}" class="btn-back">&#8592; Dashboard</a>
+        <button class="btn-print" onclick="window.print()">&#128438; Print / PDF</button>
+      </div>
+      <img src="{{ url_for('static', filename='images/interreg.png') }}" alt="Interreg NEXT MED" class="logo">
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SECTION 1 · INTRO ═══════════════════════════════ -->
+  <div class="card">
+    <div class="card-title"><span class="sec-num">1</span> Introduction &amp; Project Context</div>
+    <p class="intro-text">
+      This report presents the <strong>pre-intervention baseline environmental assessment</strong> for the NBS4MED pilot
+      site in <strong>{{ ctx.site }}</strong>, one of five sites across the Mediterranean basin (Spain, T&uuml;rkiye, Greece,
+      Tunisia, Egypt). All indicators are derived from <strong>satellite remote sensing</strong> (Landsat&nbsp;8/9, MODIS, CHIRPS)
+      and <strong>NASA POWER MERRA-2</strong> climate reanalysis over a 30-year reference period. These results feed into
+      the Self-Evaluation Tool (Activity&nbsp;3.3.2) to size, justify, and monitor Nature-Based Solution interventions under
+      the Interreg NEXT MED Programme.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════ SECTION 2 · SITE DIAGNOSTIC ═══════════════════════════ -->
+  <div class="card">
+    <div class="card-title"><span class="sec-num">2</span> {{ ctx.site }} &mdash; Baseline Environmental Diagnostic</div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      {% for kpi in ctx.kpis %}
+      <div class="kpi-card c-{{ kpi.color }}">
+        <div class="kpi-abbr">{{ kpi.abbr }}</div>
+        <div class="kpi-name">{{ kpi.name }}</div>
+        <div>
+          <span class="kpi-val">{{ kpi.value }}</span>
+          <span class="kpi-unit">{{ kpi.unit }}</span>
+        </div>
+        <div><span class="kpi-badge bg-{{ kpi.color }}">{{ kpi.label }}</span></div>
+        <div class="kpi-note">{{ kpi.note }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Supporting indices -->
+    <div class="supp-row">
+      {% for s in ctx.supporting %}
+      <div class="supp-item">
+        <div class="supp-name">{{ s.name }}</div>
+        <div class="supp-val">{{ s.value }}</div>
+        {% if s.label %}
+        <div class="supp-lbl t-{{ s.color }}">&#9679; {{ s.label }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Two-column: site info + climate -->
+    <div class="two-col">
+      <div>
+        <div class="col-label">Site Information</div>
+        <table class="tbl">
+          <tr><td class="param">WP4 Action</td><td>{{ ctx.site_data.wp4_action }}</td></tr>
+          <tr><td class="param">Intervention area</td><td>{{ "{:,}".format(ctx.site_data.area_m2) }} m&sup2;</td></tr>
+          <tr><td class="param">Project partner</td><td>{{ ctx.site_data.partner }}</td></tr>
+          <tr><td class="param">Primary climate risk</td><td>{{ ctx.site_data.primary_risk }}</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="col-label">Climatological Profile <span class="tag">NASA POWER MERRA-2 &middot; 30-yr</span></div>
+        <table class="tbl">
+          {% for row in ctx.climate %}
+          <tr><td class="param">{{ row.param }}</td><td>{{ row.value }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <!-- Diagnostic summary -->
+    <div class="diag-box">{{ ctx.diag_summary | safe }}</div>
+
+  </div>
+
+  <!-- ═════════════════════════ SECTION 3 · CROSS-SITE COMPARISON ═════════════════════════ -->
+  <div class="card">
+    <div class="card-title"><span class="sec-num">3</span> Comparative Baseline &mdash; All Pilot Sites</div>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:14px;">
+      Values for sites other than <strong>{{ ctx.site }}</strong> are representative baseline estimates.
+    </p>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Aridity Zone</th>
+          <th>AI (P/PET)</th>
+          <th>LST (°C)</th>
+          <th>Heat Index (°C)</th>
+          <th>VCI (/100)</th>
+          <th>NDVI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ctx.cross_sites %}
+        <tr {% if row.is_current %}class="row-hi"{% endif %}>
+          <td>
+            {{ row.country }} &mdash; {{ row.short }}
+            {% if row.is_current %}<span class="tag">this site</span>{% endif %}
+          </td>
+          <td>{{ row.aridity }}</td>
+          <td>{{ "%.2f"|format(row.ai_v) }}</td>
+          <td>{{ "%.1f"|format(row.lst_v) }}</td>
+          <td>{{ "%.1f"|format(row.hi_v) }}</td>
+          <td>{{ "%.0f"|format(row.vci_v) }}</td>
+          <td>{{ "%.2f"|format(row.ndvi_v) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════ FOOTER ══════════════════════════════════ -->
+  <div class="rpt-footer">
+    NBS4MED &middot; Interreg NEXT MED Programme &middot; University of Jordan (PP07) &middot; Activity 3.3.2<br>
+    Pre-intervention baseline &middot; Issued {{ ctx.today }}
+  </div>
+
+</div>
+</body>
+</html>

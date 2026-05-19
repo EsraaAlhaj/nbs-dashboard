@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+flask_app/venv/
+venv/
+env/
+
+# GEE / Google credentials (never commit)
+*.json
+credentials/
+.config/
+
+# Streamlit secrets
+.streamlit/
+
+# Flask
+instance/
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temp / scratch files
+_apply_design.py
+_fix_return.py
+_new_report_fn.py
+_restore.py
+verify.py
+app.py.backup
+backup/
+target_design.html.txt
+gitignore
+interreg.png.png
+uj_logo.png.png
+"test spain"
+app1.py
