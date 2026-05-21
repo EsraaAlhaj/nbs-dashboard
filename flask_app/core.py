@@ -1705,18 +1705,21 @@ def compute_site_metrics(site_name: str,
         ndvi_df   = pd.DataFrame(columns=["date", "ndvi"])
 
     if not power_df.empty:
-        if "T2M_MAX" in power_df.columns:
+        if "T2M_MAX" in power_df.columns and "RH2M" in power_df.columns:
             summer = power_df[power_df["date"].dt.month.isin([6, 7, 8])]
-            if not summer.empty and not summer["T2M_MAX"].isna().all():
-                t_for_hi  = summer["T2M_MAX"].mean()
-                rh_for_hi = summer["RH2M"].mean() if not summer["RH2M"].isna().all() else power_df["RH2M"].mean()
-            else:
-                t_for_hi  = power_df["T2M_MAX"].mean()
-                rh_for_hi = power_df["RH2M"].mean()
+            src = summer if not summer.empty else power_df
+            src = src.copy()
+            src["_hi"] = src.apply(
+                lambda r: heat_index_noaa(r["T2M_MAX"], r["RH2M"])
+                if pd.notna(r["T2M_MAX"]) and pd.notna(r["RH2M"]) else None,
+                axis=1,
+            )
+            hi_series = src["_hi"].dropna()
+            metrics["HeatIndex"] = float(hi_series.mean())     if not hi_series.empty else None
+            metrics["HI_p95"]    = float(hi_series.quantile(0.95)) if not hi_series.empty else None
         else:
-            t_for_hi  = None
-            rh_for_hi = power_df["RH2M"].mean()
-        metrics["HeatIndex"] = heat_index_noaa(t_for_hi, rh_for_hi)
+            metrics["HeatIndex"] = None
+            metrics["HI_p95"]    = None
         metrics["Aridity"]   = compute_aridity(power_df, lat)
         metrics["LST_zscore"] = compute_thermal_zscore(
             metrics.get("LST"), power_df, "T2M_MAX", summer_only=True)

@@ -294,6 +294,12 @@
     margin-bottom: 10px;
     display: flex; align-items: center; gap: 6px;
   }
+  .kpi-label .kpi-tip {
+    font-size: 10px; color: var(--muted-2);
+    cursor: help; text-transform: none; letter-spacing: 0;
+    opacity: 0.7;
+  }
+  .kpi-label .kpi-tip:hover { opacity: 1; color: var(--navy); }
   .kpi-label .src {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9.5px; font-weight: 500;

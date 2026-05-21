@@ -155,14 +155,18 @@ def _compute_from_power(power_df, lat):
     if not _CORE_OK or power_df.empty:
         return result
 
-    # Heat Index — summer T2M_MAX + RH2M
+    # Heat Index — per-row then average (avoids Jensen's inequality bias)
     if "T2M_MAX" in power_df.columns and "RH2M" in power_df.columns:
         summer = power_df[power_df["date"].dt.month.isin([6, 7, 8])]
-        src = summer if not summer.empty else power_df
-        t  = src["T2M_MAX"].mean()
-        rh = src["RH2M"].mean()
-        if pd.notna(t) and pd.notna(rh):
-            result["hi"] = heat_index_noaa(t, rh)
+        src = (summer if not summer.empty else power_df).copy()
+        src["_hi"] = src.apply(
+            lambda r: heat_index_noaa(r["T2M_MAX"], r["RH2M"])
+            if pd.notna(r["T2M_MAX"]) and pd.notna(r["RH2M"]) else None,
+            axis=1,
+        )
+        hi_series = src["_hi"].dropna()
+        result["hi"]     = float(hi_series.mean())          if not hi_series.empty else None
+        result["hi_p95"] = float(hi_series.quantile(0.95))  if not hi_series.empty else None
 
     # Aridity Index
     result["ai"] = compute_aridity(power_df, lat)
