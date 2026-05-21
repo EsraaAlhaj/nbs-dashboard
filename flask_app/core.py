@@ -1494,14 +1494,6 @@ def generate_pdf_report(site: str, lat: float, lon: float,
     cv.drawString(L + 8, y - 17, f"Primary risk: {site_data['primary_risk']}  ·  Partner: {site_data['partner']}")
     y -= 32
 
-    # NBS recommendations (compact)
-    y = sec("NBS RECOMMENDATIONS", y)
-    for rec in recs[:3]:
-        cv.setFillColor(hx("#0f172a")); cv.setFont("Helvetica", 7.5)
-        cv.drawString(L + 2, y + 1, f"• {rec[:95]}")
-        y -= 12
-    y -= 4
-
     cv.setFillColor(hx("#005088")); cv.rect(0, 0, W, 20, fill=1, stroke=0)
     cv.setFillColor(rl_white); cv.setFont("Helvetica", 7.5)
     cv.drawCentredString(W / 2, 6, "NBS4MED  ·  Interreg NEXT MED Programme  ·  University of Jordan (PP7)")
