@@ -165,7 +165,7 @@ def init_ee() -> Tuple[bool, str]:
 
 def site_buffer(area_m2: int, sensor: str = "landsat") -> int:
     if sensor == "chirps":  return 5000
-    return 1000
+    return 200
 
 
 def aoi_geom(lat: float, lon: float, buffer_m: int = 500):
