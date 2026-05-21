@@ -328,6 +328,27 @@ def fetch_nasa_power(lat: float, lon: float,
 # ════════════════════════════════════════════════════════════════════════════
 #  DERIVED INDICES
 # ════════════════════════════════════════════════════════════════════════════
+def compute_thermal_zscore(
+    observed_val: Optional[float],
+    power_df: pd.DataFrame,
+    column: str = "T2M_MAX",
+    summer_only: bool = True,
+) -> Optional[float]:
+    """Z-score of observed_val vs. site's own 30-year NASA POWER baseline.
+    summer_only restricts the baseline to Jun-Aug (peak heat months).
+    Returns None when < 24 valid monthly values are available."""
+    if observed_val is None or power_df.empty or column not in power_df.columns:
+        return None
+    src = power_df[power_df["date"].dt.month.isin([6, 7, 8])] if summer_only else power_df
+    vals = src[column].dropna()
+    if len(vals) < 24:
+        return None
+    sig = float(vals.std())
+    if sig < 0.01:
+        return None
+    return round((observed_val - float(vals.mean())) / sig, 2)
+
+
 def heat_index_noaa(t_c: Optional[float], rh: Optional[float]) -> Optional[float]:
     """NOAA Heat Index (Rothfusz 1990 + NWS adjustments). Input: air temp °C,
     RH %. Output: °C. Includes the NWS low-RH and high-RH corrections, which
@@ -1697,6 +1718,10 @@ def compute_site_metrics(site_name: str,
             rh_for_hi = power_df["RH2M"].mean()
         metrics["HeatIndex"] = heat_index_noaa(t_for_hi, rh_for_hi)
         metrics["Aridity"]   = compute_aridity(power_df, lat)
+        metrics["LST_zscore"] = compute_thermal_zscore(
+            metrics.get("LST"), power_df, "T2M_MAX", summer_only=True)
+        metrics["HI_zscore"]  = compute_thermal_zscore(
+            metrics.get("HeatIndex"), power_df, "T2M_MAX", summer_only=True)
 
     if not ndvi_df.empty:
         tmax_max = power_df["T2M_MAX"].max() if (not power_df.empty and "T2M_MAX" in power_df.columns) else 40.0

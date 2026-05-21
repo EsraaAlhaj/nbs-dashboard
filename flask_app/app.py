@@ -108,17 +108,27 @@ def _kpi(value, fmt, unit, label, color):
 def _na():
     return {"value": None, "fmt": "—", "unit": "", "status": "No data", "color": "muted"}
 
-def lst_kpi(v):
+def lst_kpi(v, z=None):
     if v is None: return _na()
-    if v > 40:    return _kpi(v, f"{v:.1f}", "°C", "Critical", "red")
-    if v > 32:    return _kpi(v, f"{v:.1f}", "°C", "High",     "amber")
-    return             _kpi(v, f"{v:.1f}", "°C", "Normal",   "green")
+    if z is not None:
+        if z >  2.0: return _kpi(v, f"{v:.1f}", "°C", f"Critical (+{z:.1f}σ)", "red")
+        if z >  1.0: return _kpi(v, f"{v:.1f}", "°C", f"High (+{z:.1f}σ)",     "amber")
+        if z < -1.0: return _kpi(v, f"{v:.1f}", "°C", f"Below avg ({z:.1f}σ)", "green")
+        return             _kpi(v, f"{v:.1f}", "°C", f"Normal ({z:.1f}σ)",    "green")
+    if v > 40: return _kpi(v, f"{v:.1f}", "°C", "Critical", "red")
+    if v > 32: return _kpi(v, f"{v:.1f}", "°C", "High",     "amber")
+    return          _kpi(v, f"{v:.1f}", "°C", "Normal",   "green")
 
-def hi_kpi(v):
+def hi_kpi(v, z=None):
     if v is None: return _na()
-    if v > 40:    return _kpi(v, f"{v:.1f}", "°C", "Danger",   "red")
-    if v > 32:    return _kpi(v, f"{v:.1f}", "°C", "Caution",  "amber")
-    return             _kpi(v, f"{v:.1f}", "°C", "Comfort",  "green")
+    if z is not None:
+        if z >  2.0: return _kpi(v, f"{v:.1f}", "°C", f"Danger (+{z:.1f}σ)",   "red")
+        if z >  1.0: return _kpi(v, f"{v:.1f}", "°C", f"Caution (+{z:.1f}σ)",  "amber")
+        if z < -1.0: return _kpi(v, f"{v:.1f}", "°C", f"Mild ({z:.1f}σ)",      "green")
+        return             _kpi(v, f"{v:.1f}", "°C", f"Comfort ({z:.1f}σ)",   "green")
+    if v > 40: return _kpi(v, f"{v:.1f}", "°C", "Danger",  "red")
+    if v > 32: return _kpi(v, f"{v:.1f}", "°C", "Caution", "amber")
+    return          _kpi(v, f"{v:.1f}", "°C", "Comfort", "green")
 
 def vci_kpi(v):
     if v is None: return _na()
@@ -224,8 +234,9 @@ def _build_site_from_metrics(meta, metrics, computed):
         "lat":          lat,
         "lon":          lon,
         # KPIs from GEE where available, NASA POWER as fallback
-        "lst":        lst_kpi(metrics.get("LST")),
-        "heat_index": hi_kpi(metrics.get("HeatIndex") or computed["hi"]),
+        "lst":        lst_kpi(metrics.get("LST"),       metrics.get("LST_zscore")),
+        "heat_index": hi_kpi(metrics.get("HeatIndex") or computed["hi"],
+                             metrics.get("HI_zscore")),
         "vegetation": vci_kpi(metrics.get("VCI")),
         "aridity":    ai_kpi(metrics.get("Aridity")   or computed["ai"]),
         # Spectral from GEE
