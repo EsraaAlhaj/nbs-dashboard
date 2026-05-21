@@ -42,9 +42,10 @@
       <div class="check on"><span class="box"></span>Climate (NASA POWER)</div>
     </div>
 
-    <div class="sb-section">Time Window</div>
+    <div class="sb-section">Time Window &nbsp;<span id="slider-label" style="font-weight:700;color:#005088;">10 yrs</span></div>
     <div class="slider-row">
-      <div class="slider"><div class="fill"></div><div class="thumb"></div></div>
+      <input type="range" id="time-slider" min="3" max="15" step="1" value="10"
+             style="width:100%;accent-color:#005088;cursor:pointer;margin:6px 0 2px;">
       <div class="slider-meta"><span>3 yrs</span><span>10 yrs</span><span>15 yrs</span></div>
     </div>
     <div class="info-note">
@@ -434,6 +435,8 @@ function switchTab(name) {
     _renderChart('chart-spi',     CHARTS.spi);
     _renderChart('chart-precip',  CHARTS.precip);
     _trendsRendered = true;
+    const _initYrs = parseInt(document.getElementById('time-slider').value);
+    if (_initYrs !== 15) _applyTimeWindow(_initYrs);
   }
   // التحديث هنا: تشغيل الشارتين الجديدين بدلاً من القديم
   if (name === 'climate' && !_climateRendered) {
@@ -459,6 +462,53 @@ function initMap() {
 
 function openTextReport() { window.open('/site/' + SITE_ID + '/report', '_blank'); }
 function downloadPdf()    { window.location.href = '/site/' + SITE_ID + '/pdf'; }
+
+// ── Time-window slider ────────────────────────────────────────────────────
+function _applyTimeWindow(years) {
+  const now = new Date();
+  const cutoffYear = now.getFullYear() - years;
+
+  // NDVI chart — x is "YYYY-MM" strings
+  if (CHARTS.ndvi) {
+    try {
+      const spec = JSON.parse(CHARTS.ndvi);
+      spec.data.forEach(trace => {
+        if (!trace.x) return;
+        const mask = trace.x.map(d => parseInt(d.slice(0, 4)) > cutoffYear);
+        trace.x = trace.x.filter((_, i) => mask[i]);
+        trace.y = trace.y.filter((_, i) => mask[i]);
+      });
+      Plotly.react('chart-ndvi', spec.data, spec.layout, _plotlyConfig);
+    } catch(e) { console.warn('NDVI filter failed', e); }
+  }
+
+  // Precipitation chart — x is year integers
+  if (CHARTS.precip) {
+    try {
+      const spec = JSON.parse(CHARTS.precip);
+      spec.data.forEach(trace => {
+        if (!trace.x) return;
+        const mask = trace.x.map(yr => parseInt(yr) > cutoffYear);
+        trace.x = trace.x.filter((_, i) => mask[i]);
+        trace.y = trace.y.filter((_, i) => mask[i]);
+        if (trace.marker && Array.isArray(trace.marker.color)) {
+          trace.marker.color = trace.marker.color.filter((_, i) => mask[i]);
+        }
+      });
+      Plotly.react('chart-precip', spec.data, spec.layout, _plotlyConfig);
+    } catch(e) { console.warn('Precip filter failed', e); }
+  }
+}
+
+const _slider = document.getElementById('time-slider');
+const _sliderLabel = document.getElementById('slider-label');
+if (_slider) {
+  _slider.addEventListener('input', function() {
+    const yrs = parseInt(this.value);
+    _sliderLabel.textContent = yrs + ' yrs';
+    if (_trendsRendered) _applyTimeWindow(yrs);
+  });
+}
 
 switchTab('map');
 </script>
