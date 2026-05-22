@@ -1520,8 +1520,7 @@ def generate_pdf_report(site: str, lat: float, lon: float,
     cv.drawCentredString(W / 2, 6, "NBS4MED  ·  Interreg NEXT MED Programme  ·  University of Jordan (PP7)")
     cv.setFillColor(hx("#11caa0")); cv.setLineWidth(3); cv.line(0, 20, 0, H)
 
-    # ── PAGE 2: Radar chart + cross-site table ────────────────────────────
-    from reportlab.lib.colors import Color as _RLColor
+    # ── PAGE 2: Cross-site comparison table ──────────────────────────────
     cv.showPage()
     cv.setFillColor(hx("#005088")); cv.rect(0, H - 58, W, 58, fill=1, stroke=0)
     cv.setFillColor(hx("#11caa0")); cv.rect(0, H - 4, W, 4, fill=1, stroke=0)
@@ -1529,80 +1528,8 @@ def generate_pdf_report(site: str, lat: float, lon: float,
     cv.drawString(L, H - 34, "Comparative Baseline Analysis — All Pilot Sites")
     cv.setFont("Helvetica", 8); cv.drawString(L, H - 48, f"NBS4MED  ·  Pre-intervention baseline  ·  {today}")
 
-    _P2 = [
-        {"name": "Cerdanyola", "col": "#ef4444", "lst": 36.2, "hi": 34.8, "vhi": 35.0, "ai": 0.45},
-        {"name": "Izmir",      "col": "#f59e0b", "lst": 37.8, "hi": 37.5, "vhi": 31.0, "ai": 0.56},
-        {"name": "Sikionies",  "col": "#3b82f6", "lst": 34.9, "hi": 35.2, "vhi": 38.0, "ai": 0.53},
-        {"name": "Tunis",      "col": "#8b5cf6", "lst": 40.1, "hi": 37.0, "vhi": 26.0, "ai": 0.32},
-        {"name": "Heliopolis", "col": "#06b6d4", "lst": 44.6, "hi": 42.8, "vhi": 12.0, "ai": 0.09},
-    ]
     _sn2 = short.lower().replace("İ", "i").replace("ı", "i")
-    for _r in _P2:
-        if _r["name"].lower() in _sn2 or _sn2 in _r["name"].lower():
-            if lst  is not None and not (isinstance(lst,  float) and pd.isna(lst)):  _r["lst"] = lst
-            if hi   is not None and not (isinstance(hi,   float) and pd.isna(hi)):   _r["hi"]  = hi
-            if vhi  is not None and not (isinstance(vhi,  float) and pd.isna(vhi)):  _r["vhi"] = vhi
-            if ai   is not None and not (isinstance(ai,   float) and pd.isna(ai)):   _r["ai"]  = ai
-            break
-
-    def _p2_risk(d):
-        return [min(100, max(0, (d["lst"] - 20) / 30 * 100)),
-                min(100, max(0, (d["hi"]  - 20) / 30 * 100)),
-                min(100, max(0, (40 - d["vhi"]) / 40 * 100)),
-                min(100, max(0, (0.65 - d["ai"]) / 0.65 * 100))]
-
-    RCX, RCY, RR = W / 2 - 60, 572.0, 135.0
-    _DEGS = [90, 0, 270, 180]
-    for pct in [0.25, 0.50, 0.75, 1.00]:
-        _pts = [(RCX + RR * pct * math.cos(math.radians(d)),
-                 RCY + RR * pct * math.sin(math.radians(d))) for d in _DEGS]
-        _p = cv.beginPath(); _p.moveTo(_pts[0][0], _pts[0][1])
-        for _px, _py in _pts[1:]: _p.lineTo(_px, _py)
-        _p.close()
-        cv.setStrokeColor(hx("#cbd5e1") if pct == 1.0 else hx("#e2e8f0"))
-        cv.setLineWidth(0.8 if pct == 1.0 else 0.4); cv.drawPath(_p, stroke=1, fill=0)
-        cv.setFillColor(hx("#64748b")); cv.setFont("Helvetica", 7)
-        cv.drawString(RCX + 3, RCY + RR * pct + 2, f"{int(pct*100)}%")
-    cv.setStrokeColor(hx("#94a3b8")); cv.setLineWidth(1.0)
-    for _d in _DEGS:
-        _rd = math.radians(_d); cv.line(RCX, RCY, RCX + RR * math.cos(_rd), RCY + RR * math.sin(_rd))
-    for _d, _lbl in [(90, "Land Surface Temp\n(LST Risk)"), (0, "Heat Index\nRisk"),
-                      (270, "Vegetation\nRisk  (VCI inv.)"), (180, "Aridity Risk\n(AI inv.)")]:
-        _rd = math.radians(_d); _lx = RCX + (RR + 20) * math.cos(_rd); _ly = RCY + (RR + 20) * math.sin(_rd)
-        _lines = _lbl.split("\n"); _base_y = _ly + (9 * (len(_lines) - 1)) / 2
-        for _li, _ll in enumerate(_lines):
-            cv.setFillColor(hx("#005088")); cv.setFont("Helvetica-Bold", 7.5)
-            cv.drawCentredString(_lx, _base_y - _li * 9, _ll)
-    for _sd in _P2:
-        _vals = _p2_risk(_sd)
-        _pts  = [(RCX + RR * _vals[i] / 100.0 * math.cos(math.radians(_DEGS[i])),
-                  RCY + RR * _vals[i] / 100.0 * math.sin(math.radians(_DEGS[i]))) for i in range(4)]
-        _p = cv.beginPath(); _p.moveTo(_pts[0][0], _pts[0][1])
-        for _px, _py in _pts[1:]: _p.lineTo(_px, _py)
-        _p.close()
-        _ch = _sd["col"]
-        _cr, _cg, _cb = int(_ch[1:3],16)/255, int(_ch[3:5],16)/255, int(_ch[5:7],16)/255
-        cv.setFillColor(_RLColor(_cr, _cg, _cb, alpha=0.18))
-        cv.setStrokeColor(_RLColor(_cr, _cg, _cb, alpha=0.95)); cv.setLineWidth(2.0)
-        cv.drawPath(_p, stroke=1, fill=1)
-
-    _LX, _LY = RCX + RR + 50, RCY + 60
-    cv.setFont("Helvetica-Bold", 8.5); cv.setFillColor(hx("#005088")); cv.drawString(_LX, _LY + 14, "PILOT SITES")
-    for _i, (_nm, _col) in enumerate([("Spain — Cerdanyola","#ef4444"),("Turkiye — Izmir","#f59e0b"),
-                                       ("Greece — Sikionies","#3b82f6"),("Tunisia — Tunis","#8b5cf6"),
-                                       ("Egypt — Heliopolis","#06b6d4")]):
-        _iy = _LY - _i * 19
-        _chr, _chg, _chb = int(_col[1:3],16)/255, int(_col[3:5],16)/255, int(_col[5:7],16)/255
-        cv.setFillColor(_RLColor(_chr, _chg, _chb, alpha=0.9)); cv.roundRect(_LX, _iy - 8, 12, 11, 2, fill=1, stroke=0)
-        cv.setFillColor(hx("#0f172a")); cv.setFont("Helvetica", 8)
-        _is_cur = (_nm.split("—")[1].strip().lower() in _sn2 or _sn2 in _nm.split("—")[1].strip().lower())
-        cv.drawString(_LX + 18, _iy - 4, _nm + (" ★" if _is_cur else ""))
-
-    _note_y = RCY - RR - 18
-    cv.setFillColor(hx("#64748b")); cv.setFont("Helvetica", 6.5)
-    cv.drawString(L, _note_y, "All axes show RISK level (0=no risk, 100=max). Vegetation & Aridity axes inverted: lower VCI/AI = higher risk.")
-
-    _TY = _note_y - 20
+    _TY = H - 80
     cv.setFont("Helvetica-Bold", 7.5); cv.setFillColor(hx("#005088"))
     cv.drawString(L, _TY + 4, "CROSS-SITE BASELINE DATA TABLE")
     cv.setStrokeColor(hx("#11caa0")); cv.setLineWidth(1.2); cv.line(L, _TY, R, _TY); _TY -= 16
