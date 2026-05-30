@@ -685,7 +685,30 @@
   letter-spacing: 0.1em;
   color: var(--muted);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
 }
+.tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: help;
+  flex-shrink: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.tip-icon:hover { opacity: 1; }
 .tstat-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 18px;
