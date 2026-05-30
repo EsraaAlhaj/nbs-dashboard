@@ -766,6 +766,7 @@ def chart_temperature_profile_json(power_df: pd.DataFrame) -> Optional[str]:
         marker=dict(size=6, color=PALETTE["red"], line=dict(width=1.5, color="white")),
         hovertemplate="%{y:.1f} °C<extra></extra>"))
     fig.update_yaxes(title_text="Temperature (°C)")
+    fig.update_xaxes(title_text="Months (30-Year Average)")
     styled_fig(fig, 360)
     return fig.to_json()
 
