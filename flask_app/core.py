@@ -795,8 +795,19 @@ def chart_hydro_solar_profile_json(power_df: pd.DataFrame) -> Optional[str]:
             mode="lines+markers",
             marker=dict(size=5, symbol="diamond", color=PALETTE["orange"]),
             hovertemplate="%{y:.1f} kWh/m²/day<extra></extra>"), secondary_y=True)
-    fig.update_yaxes(title_text="Precipitation (mm/day)", secondary_y=False)
-    fig.update_yaxes(title_text="Solar Radiation (kWh/m²/d)", secondary_y=True)
+    fig.update_yaxes(
+        title_text="Precipitation (mm/day)",
+        title_font=dict(color=PALETTE["navy"]),
+        tickfont=dict(color=PALETTE["navy"]),
+        secondary_y=False,
+    )
+    fig.update_yaxes(
+        title_text="Solar Radiation (kWh/m²/d)",
+        title_font=dict(color=PALETTE["orange"]),
+        tickfont=dict(color=PALETTE["orange"]),
+        secondary_y=True,
+    )
+    fig.update_xaxes(title_text="Monthly Average (30-Year Baseline)")
     styled_fig(fig, 360)
     return fig.to_json()
 
