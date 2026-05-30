@@ -178,19 +178,19 @@
           <div class="plotly-wrap" id="chart-ndvi"></div>
 
           <div class="trend-stats">
-            <div class="tstat">
+            <div class="tstat" title="Full Name: Normalized Difference Vegetation Index. Explanation: Measures current vegetation density. Higher values indicate denser vegetation.">
               <div class="tstat-label">Current NDVI</div>
               <div class="tstat-value">{{ "%.3f"|format(site.ndvi) if site.ndvi is not none else "—" }}</div>
             </div>
-            <div class="tstat">
+            <div class="tstat" title="Full Name: Soil-Adjusted Vegetation Index. Explanation: Measures vegetation density while isolating the effect of bare soil, making it more accurate for urban pilot sites.">
               <div class="tstat-label">SAVI</div>
               <div class="tstat-value">{{ "%.3f"|format(site.savi) if site.savi is not none else "—" }}</div>
             </div>
-            <div class="tstat">
+            <div class="tstat" title="Full Name: Moisture Stress Index. Explanation: Measures water retention in leaves. Values &lt; 1 indicate excellent condition and no water stress.">
               <div class="tstat-label">MSI</div>
               <div class="tstat-value">{{ "%.3f"|format(site.msi) if site.msi is not none else "—" }}</div>
             </div>
-            <div class="tstat">
+            <div class="tstat" title="Full Name: Vegetation Condition Index (Kogan 1995). Explanation: Compares the current plant health to the historical best and worst conditions recorded for this exact site.">
               <div class="tstat-label">VCI</div>
               <div class="tstat-value">{{ site.vegetation.fmt }}{% if site.vegetation.unit %}/100{% endif %}</div>
             </div>
