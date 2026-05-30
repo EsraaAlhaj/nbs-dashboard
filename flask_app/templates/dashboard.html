@@ -398,43 +398,6 @@
   </main>
 </div>
 
-<!-- ── Chatbot Widget ── -->
-<div id="chat-widget">
-  <button id="chat-toggle" onclick="toggleChat()" title="Ask NBS4MED Assistant">
-    <svg id="chat-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-    <svg id="chat-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  </button>
-
-  <div id="chat-panel">
-    <div id="chat-header">
-      <div id="chat-header-info">
-        <div id="chat-avatar">N</div>
-        <div>
-          <div id="chat-title">NBS4MED Assistant</div>
-          <div id="chat-subtitle">Ask about pilot sites & indices</div>
-        </div>
-      </div>
-    </div>
-    <div id="chat-messages">
-      <div class="chat-msg bot">
-        <div class="chat-bubble">Hello! I'm the NBS4MED Assistant. Ask me anything about the pilot sites, environmental indices, or NBS interventions.</div>
-      </div>
-    </div>
-    <div id="chat-input-row">
-      <input id="chat-input" type="text" placeholder="Type your message…" onkeydown="if(event.key==='Enter') sendChat()">
-      <button id="chat-send" onclick="sendChat()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ── Scripts ── -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -561,74 +524,4 @@ if (_slider) {
 
 switchTab('map');
 
-// ── Chatbot ────────────────────────────────────────────────────────────────
-const CHAT_WEBHOOK = '/chat';
-let _chatOpen = false;
-
-function toggleChat() {
-  _chatOpen = !_chatOpen;
-  document.getElementById('chat-panel').style.display = _chatOpen ? 'flex' : 'none';
-  document.getElementById('chat-icon-open').style.display  = _chatOpen ? 'none'  : 'block';
-  document.getElementById('chat-icon-close').style.display = _chatOpen ? 'block' : 'none';
-  if (_chatOpen) document.getElementById('chat-input').focus();
-}
-
-function _appendMsg(text, role) {
-  const box = document.getElementById('chat-messages');
-  const row = document.createElement('div');
-  row.className = 'chat-msg ' + role;
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble';
-  bubble.textContent = text;
-  row.appendChild(bubble);
-  box.appendChild(row);
-  box.scrollTop = box.scrollHeight;
-}
-
-function _appendTyping() {
-  const box = document.getElementById('chat-messages');
-  const row = document.createElement('div');
-  row.className = 'chat-msg bot';
-  row.id = 'chat-typing';
-  row.innerHTML = '<div class="chat-bubble typing"><span></span><span></span><span></span></div>';
-  box.appendChild(row);
-  box.scrollTop = box.scrollHeight;
-}
-
-function _removeTyping() {
-  const el = document.getElementById('chat-typing');
-  if (el) el.remove();
-}
-
-async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  _appendMsg(msg, 'user');
-  _appendTyping();
-  document.getElementById('chat-send').disabled = true;
-  try {
-    const res = await fetch(CHAT_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, site: SITE_ID })
-    });
-    _removeTyping();
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      const reply = data?.reply || data?.output || data?.text || data?.message
-                 || (typeof data === 'string' ? data : null)
-                 || 'Response received.';
-      _appendMsg(reply, 'bot');
-    } else {
-      _appendMsg('Sorry, I could not reach the assistant right now. Please try again.', 'bot');
-    }
-  } catch(e) {
-    _removeTyping();
-    _appendMsg('Connection error. Please check your network and try again.', 'bot');
-  }
-  document.getElementById('chat-send').disabled = false;
-  document.getElementById('chat-input').focus();
-}
 </script>
