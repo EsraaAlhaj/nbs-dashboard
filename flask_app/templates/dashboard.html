@@ -443,6 +443,17 @@ const SITE_LON    = {{ site.lon }};
 const SITE_NAME   = {{ site.name | tojson }};
 const SITE_ACTION = {{ site.pilot_action | tojson }};
 const SITE_ID     = {{ site_id | tojson }};
+const SITE_CONTEXT = {
+  name: {{ site.name | tojson }},
+  action: {{ site.pilot_action | tojson }},
+  lst: {{ site.lst.fmt | tojson }}, lst_unit: {{ site.lst.unit | tojson }}, lst_status: {{ site.lst.status | tojson }},
+  hi: {{ site.heat_index.fmt | tojson }}, hi_unit: {{ site.heat_index.unit | tojson }}, hi_status: {{ site.heat_index.status | tojson }},
+  vci: {{ site.vegetation.fmt | tojson }}, vci_status: {{ site.vegetation.status | tojson }},
+  aridity: {{ site.aridity.fmt | tojson }}, aridity_status: {{ site.aridity.status | tojson }},
+  ndvi: {{ site.ndvi | tojson if site.ndvi else 'null' }},
+  savi: {{ site.savi | tojson if site.savi else 'null' }},
+  msi: {{ site.msi | tojson if site.msi else 'null' }},
+};
 
 // تحديث كائن البيانات ليشمل الشارتات الجديدة
 const CHARTS = {
@@ -611,7 +622,7 @@ async function sendChat() {
     const res = await fetch(CHAT_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, site: SITE_ID })
+      body: JSON.stringify({ message: msg, site: SITE_ID, context: SITE_CONTEXT })
     });
     _removeTyping();
     if (res.ok) {
