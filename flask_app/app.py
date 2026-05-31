@@ -2,6 +2,7 @@ from flask import Flask, render_template, Response, request, jsonify
 from datetime import datetime
 import io, sys, os
 import pandas as pd
+import requests as _requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -420,6 +421,18 @@ def pdf_report(site_id="spain"):
         return Response(f"PDF generation failed: {exc}", status=500,
                         mimetype="text/plain")
 
+
+@app.route("/chat", methods=["POST"])
+def chat_proxy():
+    N8N_WEBHOOK = "https://esraaalhaj.app.n8n.cloud/webhook/nbs-chatbot"
+    try:
+        body = request.get_json(force=True) or {}
+        resp = _requests.post(N8N_WEBHOOK, json=body, timeout=20)
+        return jsonify(resp.json()), resp.status_code
+    except _requests.exceptions.Timeout:
+        return jsonify({"reply": "The assistant took too long to respond. Please try again."}), 504
+    except Exception as e:
+        return jsonify({"reply": f"Assistant error: {e}"}), 500
 
 
 
